@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova — красивый тестовый сайт</title>
+  <meta name="description" content="Красивый тестовый сайт с анимациями, темами и современным дизайном." />
+
+  <style>
+    :root {
+      --bg: #05070d;
+      --bg-soft: #0b101a;
+      --surface: rgba(255, 255, 255, 0.06);
+      --surface-strong: rgba(255, 255, 255, 0.10);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #f2f6ff;
+      --muted: #9fb0c8;
+      --accent: #7c9cff;
+      --accent-2: #22d3ee;
+      --accent-3: #f472b6;
+      --accent-4: #34d399;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+      --radius: 24px;
+      --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    html[data-theme="light"] {
+      --bg: #f4f7fb;
+      --bg-soft: #ffffff;
+      --surface: rgba(255, 255, 255, 0.72);
+      --surface-strong: rgba(255, 255, 255, 0.92);
+      --border: rgba(15, 23, 42, 0.10);
+      --text: #0f172a;
+      --muted: #5b6b82;
+      --shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .container {
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .bg-effects {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.55;
+      animation: float 18s ease-in-out infinite;
+    }
+
+    .blob.one {
+      width: 520px;
+      height: 520px;
+      left: -120px;
+      top: -120px;
+      background: rgba(124, 156, 255, 0.42);
+    }
+
+    .blob.two {
+      width: 460px;
+      height: 460px;
+      right: -100px;
+      top: 10%;
+      background: rgba(34, 211, 238, 0.32);
+      animation-delay: -5s;
+    }
+
+    .blob.three {
+      width: 500px;
+      height: 500px;
+      left: 25%;
+      bottom: -180px;
+      background: rgba(244, 114, 182, 0.28);
+      animation-delay: -10s;
+    }
+
+    .blob.four {
+      width: 360px;
+      height: 360px;
+      right: 18%;
+      bottom: 12%;
+      background: rgba(52, 211, 153, 0.24);
+      animation-delay: -7s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      33% {
+        transform: translate3d(40px, -30px, 0) scale(1.08);
+      }
+      66% {
+        transform: translate3d(-30px, 25px, 0) scale(0.96);
+      }
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(18px);
+      background: color-mix(in srgb, var(--bg) 72%, transparent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 15px;
+    }
+
+    .logo-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent-4), var(--accent));
+      box-shadow: 0 0 28px rgba(124, 156, 255, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 11px;
+      background: var(--bg);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav-links a {
+      position: relative;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -8px;
+      width: 0;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.25s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: var(--transition);
+    }
+
+    .icon-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(124, 156, 255, 0.45);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 750;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+      border-color: rgba(124, 156, 255, 0.45);
+    }
+
+    .btn.primary {
+      border: none;
+      color: #071018;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 18px 40px rgba(124, 156, 255, 0.28);
+    }
+
+    .btn.primary:hover {
+      box-shadow: 0 22px 52px rgba(124, 156, 255, 0.38);
+    }
+
+    .mobile-toggle {
+      display: none;
+    }
+
+    .mobile-menu {
+      display: none;
+      padding: 12px 0 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .mobile-menu a {
+      display: block;
+      padding: 12px 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hero {
+      padding: 110px 0 80px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 15px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 22px;
+    }
+
+    .pulse {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-4);
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 14px rgba(52, 211, 153, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+      }
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(38px, 7vw, 82px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+      font-weight: 900;
+    }
+
+    .gradient-text {
+      background: linear-gradient(90deg, var(--text), var(--accent), var(--accent-2), var(--accent-3));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      margin: 0 0 30px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+      max-width: 680px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+
+    .trust {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .trust span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .check {
+      color: var(--accent-4);
+    }
+
+    .hero-card {
+      position: relative;
+      min-height: 500px;
+      border-radius: 30px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, var(--surface-strong), var(--surface)),
+        var(--bg-soft);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: transform 0.2s ease;
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: -35%;
+      background:
+        conic-gradient(from 180deg, transparent, rgba(124,156,255,0.22), transparent 30%),
+        conic-gradient(from 0deg, transparent, rgba(34,211,238,0.18), transparent 35%),
+        conic-gradient(from 90deg, transparent, rgba(244,114,182,0.16), transparent 30%);
+      animation: spin 22s linear infinite;
+    }
+
+    .hero-card-inner {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      padding: 24px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 18px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 800;
+    }
+
+    .preview {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .line {
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
+    }
+
+    html[data-theme="light"] .line {
+      background: linear-gradient(90deg, rgba(15,23,42,0.12), rgba(15,23,42,0.04));
+    }
+
+    .line.short {
+      width: 55%;
+    }
+
+    .line.medium {
+      width: 78%;
+    }
+
+    .line.accent {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
+    }
+
+    .stat b {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 4px;
+      letter-spacing: -0.03em;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    section {
+      padding: 86px 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 28px;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 52px);
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+      font-weight: 900;
+    }
+
+    .section-text {
+      color: var(--muted);
+      max-width: 620px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      position: relative;
+      padding: 26px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      transform-style: preserve-3d;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 0%, rgba(124,156,255,0.18), transparent 35%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(124, 156, 255, 0.35);
+    }
+
+    .icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, rgba(124,156,255,0.22), rgba(34,211,238,0.18));
+      border: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 21px;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      position: relative;
+      z-index: 1;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .metric {
+      padding: 28px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .metric b {
+      display: block;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .tile {
+      min-height: 260px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      background: var(--bg-soft);
+      transition: var(--transition);
+    }
+
+    .tile:hover {
+      transform: translateY(-8px) scale(1.015);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    .tile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, rgba(5, 7, 13, 0.72));
+    }
+
+    html[data-theme="light"] .tile::after {
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.72));
+    }
+
+    .tile:nth-child(1) {
+      background: linear-gradient(135deg, #0b1220, #7c9cff, #22d3ee);
+    }
+
+    .tile:nth-child(2) {
+      background: linear-gradient(135deg, #101820, #f472b6, #7c9cff);
+    }
+
+    .tile:nth-child(3) {
+      background: linear-gradient(135deg, #0b1220, #22d3ee, #34d399);
+    }
+
+    .tile:nth-child(4) {
+      background: linear-gradient(135deg, #12101a, #f59e0b, #f472b6);
+    }
+
+    .tile-label {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+      z-index: 2;
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .reviews {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .review {
+      padding: 26px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .stars {
+      color: #f59e0b;
+      margin-bottom: 14px;
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+
+    .review p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #071018;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
+
+    .author b {
+      display: block;
+      font-size: 14px;
+    }
+
+    .author span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cta {
+      padding: 42px;
+      border-radius: 34px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(135deg, rgba(124,156,255,0.16), rgba(34,211,238,0.10), rgba(244,114,182,0.12)),
+        var(--surface);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .cta h2 {
+      margin-bottom: 14px;
+    }
+
+    .cta p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    footer {
+      padding: 34px 0 44px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .delay-1 { transition-delay: 0.08s; }
+    .delay-2 { transition-delay: 0.16s; }
+    .delay-3 { transition-delay: 0.24s; }
+    .delay-4 { transition-delay: 0.32s; }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+
+      .cards,
+      .reviews {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics,
+      .gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cta-actions {
+        justify-content: start;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .nav-links {
+        display: none;
+      }
+
+      .mobile-toggle {
+        display: grid;
+      }
+
+      .hero {
+        padding-top: 64px;
+      }
+
+      .hero-card {
+        min-height: 420px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .cta {
+        padding: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-effects">
+    <div class="blob one"></div>
+    <div class="blob two"></div>
+    <div class="blob three"></div>
+    <div class="blob four"></div>
+  </div>
+
+  <header>
+    <div class="container">
+      <div class="nav">
+        <div class="logo">
+          <div class="logo-mark"></div>
+          <span>Nova</span>
+        </div>
+
+        <nav class="nav-links">
+          <a href="#features">Возможности</a>
+          <a href="#metrics">Метрики</a>
+          <a href="#gallery">Галерея</a>
+          <a href="#reviews">Отзывы</a>
+          <a href="#contact">Контакты</a>
+        </nav>
+
+        <div class="nav-actions">
+          <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">
+            🌙
+          </button>
+
+          <a class="btn primary" href="#contact">Начать</a>
+
+          <button class="icon-btn mobile-toggle" id="mobileToggle" aria-label="Меню">
+            ☰
+          </button>
+        </div>
+      </div>
+
+      <div class="mobile-menu" id="mobileMenu">
+        <a href="#features">Возможности</a>
+        <a href="#metrics">Метрики</a>
+        <a href="#gallery">Галерея</a>
+        <a href="#reviews">Отзывы</a>
+        <a href="#contact">Контакты</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="badge reveal">
+            <span class="pulse"></span>
+            Тестовый сайт нового поколения
+          </div>
+
+          <h1 class="reveal delay-1">
+            Красивый сайт для <span class="gradient-text">быстрых идей</span>
+          </h1>
+
+          <p class="lead reveal delay-2">
+            Современный лендинг с анимациями, темами, glassmorphism и адаптивной сеткой.
+            Идеально подходит для тестов, портфолио, хостинга и демонстрации дизайна.
+          </p>
+
+          <div class="actions reveal delay-3">
+            <a class="btn primary" href="#features">Смотреть возможности</a>
+            <a class="btn" href="#gallery">Открыть галерею</a>
+          </div>
+
+          <div class="trust reveal delay-4">
+            <span><span class="check">✓</span> Без сборки</span>
+            <span><span class="check">✓</span> Один файл</span>
+            <span><span class="check">✓</span> Адаптивно</span>
+            <span><span class="check">✓</span> Тёмная тема</span>
+          </div>
+        </div>
+
+        <div class="hero-card reveal delay-2" id="tiltCard">
+          <div class="hero-card-inner">
+            <div>
+              <div class="mini-title">Live interface</div>
+            </div>
+
+            <div class="preview">
+              <div class="line accent"></div>
+              <div class="line medium"></div>
+              <div class="line short"></div>
+              <div class="line"></div>
+              <div class="line medium"></div>
+              <div class="line short"></div>
+            </div>
+
+            <div class="stats">
+              <div class="stat">
+                <b>100%</b>
+                <span>Адаптивность</span>
+              </div>
+              <div class="stat">
+                <b>1 файл</b>
+                <span>HTML + CSS + JS</span>
+              </div>
+              <div class="stat">
+                <b>0 deps</b>
+                <span>Без библиотек</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Возможности</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Всё в одном файле: дизайн, анимации, переключение темы и интерактивные эффекты.
+            Можно использовать как шаблон для тестового проекта.
+          </p>
+        </div>
+
+        <div class="cards">
+          <div class="card reveal tilt">
+            <div class="icon">⚡</div>
+            <h3>Быстрый старт</h3>
+            <p>
+              Просто открой файл в браузере или загрузи на любой хостинг. Никакой сборки не нужно.
+            </p>
+          </div>
+
+          <div class="card reveal delay-1 tilt">
+            <div class="icon">🎨</div>
+            <h3>Современный дизайн</h3>
+            <p>
+              Градиенты, стеклянные карточки, мягкие тени, аккуратная типографика и анимированный фон.
+            </p>
+          </div>
+
+          <div class="card reveal delay-2 tilt">
+            <div class="icon">🌗</div>
+            <h3>Тёмная и светлая тема</h3>
+            <p>
+              Переключай тему одной кнопкой. Цвета меняются плавно и приятно для глаз.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metrics">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Метрики</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Анимированные счётчики появляются при прокрутке страницы.
+          </p>
+        </div>
+
+        <div class="metrics">
+          <div class="metric reveal">
+            <b data-count="120">0</b>
+            <span>Секунд до запуска</span>
+          </div>
+
+          <div class="metric reveal delay-1">
+            <b data-count="98">0</b>
+            <span>Скорость дизайна</span>
+          </div>
+
+          <div class="metric reveal delay-2">
+            <b data-count="100">0</b>
+            <span>Адаптивность</span>
+          </div>
+
+          <div class="metric reveal delay-3">
+            <b data-count="0">0</b>
+            <span>Зависимостей</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="gallery">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Галерея</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Тестовые визуальные блоки. Их можно заменить на реальные изображения или видео.
+          </p>
+        </div>
+
+        <div class="gallery">
+          <div class="tile reveal">
+            <div class="tile-label">Aurora</div>
+          </div>
+
+          <div class="tile reveal delay-1">
+            <div class="tile-label">Neon</div>
+          </div>
+
+          <div class="tile reveal delay-2">
+            <div class="tile-label">Cyber</div>
+          </div>
+
+          <div class="tile reveal delay-3">
+            <div class="tile-label">Sunset</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="reviews">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Отзывы</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Тестовые отзывы для демонстрации секции.
+          </p>
+        </div>
+
+        <div class="reviews">
+          <div class="review reveal">
+            <div class="stars">★★★★★</div>
+            <p>
+              Очень приятный шаблон. Выглядит современно, запускается мгновенно и легко редактируется.
+            </p>
+            <div class="author">
+              <div class="avatar">A</div>
+              <div>
+                <b>Алексей</b>
+                <span>Frontend Developer</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="review reveal delay-1">
+            <div class="stars">★★★★★</div>
+            <p>
+              Отлично подходит для тестового хостинга. Анимации плавные, дизайн чистый.
+            </p>
+            <div class="author">
+              <div class="avatar">M</div>
+              <div>
+                <b>Мария</b>
+                <span>UI Designer</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="review reveal delay-2">
+            <div class="stars">★★★★★</div>
+            <p>
+              Один файл — и уже красивый сайт. Можно быстро сделать демо или портфолио.
+            </p>
+            <div class="author">
+              <div class="avatar">D</div>
+              <div>
+                <b>Дмитрий</b>
+                <span>DevOps</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="container">
+        <div class="cta reveal">
+          <div>
+            <h2>Готов к запуску</h2>
+            <p>
+              Этот сайт можно использовать как тестовый лендинг, портфолио, демо хостинга
+              или основу для нового проекта.
+            </p>
+          </div>
+
+          <div class="cta-actions">
+            <a class="btn primary" href="#features">Начать</a>
+            <a class="btn" href="#gallery">Смотреть галерею</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <div>© 2026 Nova</div>
+      <div>Красивый тестовый сайт</div>
+    </div>
+  </footer>
+
+  <script>
+    const themeToggle = document.getElementById("themeToggle");
+    const mobileToggle = document.getElementById("mobileToggle");
+    const mobileMenu = document.getElementById("mobileMenu");
+    const html = document.documentElement;
+
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    html.dataset.theme = savedTheme;
+    themeToggle.textContent = savedTheme === "dark" ? "🌙" : "☀️";
+
+    themeToggle.addEventListener("click", () => {
+      const current = html.dataset.theme;
+      const next = current === "dark" ? "light" : "dark";
+
+      html.dataset.theme = next;
+      localStorage.setItem("theme", next);
+      themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
+    });
+
+    mobileToggle.addEventListener("click", () => {
+      const isOpen = mobileMenu.style.display === "block";
+      mobileMenu.style.display = isOpen ? "none" : "block";
+    });
+
+    document.querySelectorAll(".mobile-menu a").forEach((link) => {
+      link.addEventListener("click", () => {
+        mobileMenu.style.display = "none";
+      });
+    });
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.12,
+      }
+    );
+
+    document.querySelectorAll(".reveal").forEach((el) => {
+      revealObserver.observe(el);
+    });
+
+    const counterObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const el = entry.target;
+          const target = Number(el.dataset.count || 0);
+          const duration = 1400;
+          const start = performance.now();
+
+          function tick(now) {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(target * eased);
+
+            if (progress < 1) {
+              requestAnimationFrame(tick);
+            }
+          }
+
+          requestAnimationFrame(tick);
+          counterObserver.unobserve(el);
+        });
+      },
+      {
+        threshold: 0.4,
+      }
+    );
+
+    document.querySelectorAll("[data-count]").forEach((el) => {
+      counterObserver.observe(el);
+    });
+
+    function addTilt(card) {
+      card.addEventListener("mousemove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const rotateX = ((y / rect.height) - 0.5) * -8;
+        const rotateY = ((x / rect.width) - 0.5) * 8;
+
+        card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+      });
+
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0px)";
+      });
+    }
+
+    document.querySelectorAll(".tilt").forEach(addTilt);
+
+    const heroCard = document.getElementById("tiltCard");
+    if (heroCard) {
+      addTilt(heroCard);
+    }
+  </script>
+</body>
+</html>

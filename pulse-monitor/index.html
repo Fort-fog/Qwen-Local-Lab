@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseMonitor — AMD GPU + CPU Monitor</title>
+  <meta name="description" content="Лендинг для монитора AMD GPU и CPU с hotspot температурой, VRAM, power, fan и live dashboard." />
+
+  <style>
+    :root {
+      --bg: #05070d;
+      --bg-soft: #0b101a;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-strong: rgba(255, 255, 255, 0.10);
+      --soft: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #f2f6ff;
+      --muted: #9fb0c8;
+      --accent: #7c9cff;
+      --accent-2: #22d3ee;
+      --accent-3: #f472b6;
+      --green: #34d399;
+      --orange: #f59e0b;
+      --red: #ff5c7c;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+      --radius: 24px;
+      --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    html[data-theme="light"] {
+      --bg: #f4f7fb;
+      --bg-soft: #ffffff;
+      --panel: rgba(255, 255, 255, 0.72);
+      --panel-strong: rgba(255, 255, 255, 0.92);
+      --soft: rgba(15, 23, 42, 0.04);
+      --border: rgba(15, 23, 42, 0.10);
+      --text: #0f172a;
+      --muted: #5b6b82;
+      --shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .container {
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .bg-effects {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.55;
+      animation: float 18s ease-in-out infinite;
+    }
+
+    .blob.one {
+      width: 520px;
+      height: 520px;
+      left: -120px;
+      top: -120px;
+      background: rgba(124, 156, 255, 0.42);
+    }
+
+    .blob.two {
+      width: 460px;
+      height: 460px;
+      right: -100px;
+      top: 10%;
+      background: rgba(34, 211, 238, 0.32);
+      animation-delay: -5s;
+    }
+
+    .blob.three {
+      width: 500px;
+      height: 500px;
+      left: 25%;
+      bottom: -180px;
+      background: rgba(244, 114, 182, 0.28);
+      animation-delay: -10s;
+    }
+
+    .blob.four {
+      width: 360px;
+      height: 360px;
+      right: 18%;
+      bottom: 12%;
+      background: rgba(52, 211, 153, 0.24);
+      animation-delay: -7s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      33% {
+        transform: translate3d(40px, -30px, 0) scale(1.08);
+      }
+      66% {
+        transform: translate3d(-30px, 25px, 0) scale(0.96);
+      }
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(18px);
+      background: rgba(5, 7, 13, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    html[data-theme="light"] header {
+      background: rgba(244, 247, 251, 0.78);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 15px;
+    }
+
+    .logo-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--green), var(--accent));
+      box-shadow: 0 0 28px rgba(124, 156, 255, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 11px;
+      background: var(--bg);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      position: relative;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -8px;
+      width: 0;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.25s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: var(--transition);
+    }
+
+    .icon-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(124, 156, 255, 0.45);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+      border-color: rgba(124, 156, 255, 0.45);
+    }
+
+    .btn.primary {
+      border: none;
+      color: #071018;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 18px 40px rgba(124, 156, 255, 0.28);
+    }
+
+    .btn.primary:hover {
+      box-shadow: 0 22px 52px rgba(124, 156, 255, 0.38);
+    }
+
+    .mobile-toggle {
+      display: none;
+    }
+
+    .mobile-menu {
+      display: none;
+      padding: 12px 0 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .mobile-menu.open {
+      display: block;
+    }
+
+    .mobile-menu a {
+      display: block;
+      padding: 12px 0;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .hero {
+      padding: 100px 0 80px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 15px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 22px;
+    }
+
+    .pulse {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 14px rgba(52, 211, 153, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+      }
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(38px, 7vw, 78px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+      font-weight: 900;
+    }
+
+    .gradient-text {
+      background: linear-gradient(90deg, var(--text), var(--accent), var(--accent-2), var(--accent-3));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      margin: 0 0 30px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+      max-width: 680px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+
+    .trust {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .trust span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .check {
+      color: var(--green);
+    }
+
+    .dashboard {
+      position: relative;
+      min-height: 560px;
+      border-radius: 30px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, var(--panel-strong), var(--panel)),
+        var(--bg-soft);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: transform 0.2s ease;
+      padding: 22px;
+    }
+
+    .dashboard::before {
+      content: "";
+      position: absolute;
+      inset: -35%;
+      background:
+        conic-gradient(from 180deg, transparent, rgba(124,156,255,0.22), transparent 30%),
+        conic-gradient(from 0deg, transparent, rgba(34,211,238,0.18), transparent 35%),
+        conic-gradient(from 90deg, transparent, rgba(244,114,182,0.16), transparent 30%);
+      animation: spin 22s linear infinite;
+    }
+
+    .dashboard-inner {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 18px;
+    }
+
+    .dash-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 900;
+    }
+
+    .status {
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 14px var(--green);
+    }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+      background: var(--panel);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--soft);
+    }
+
+    .metric.wide {
+      grid-column: span 3;
+    }
+
+    .metric .label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .metric strong {
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .hot {
+      color: var(--orange);
+    }
+
+    .bar {
+      height: 8px;
+      margin-top: 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.6s ease;
+    }
+
+    .fill.gpu {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .fill.cpu {
+      background: linear-gradient(90deg, var(--accent-3), var(--orange));
+    }
+
+    .fill.vram {
+      background: linear-gradient(90deg, var(--green), var(--accent-2));
+    }
+
+    .spark-wrap {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+      background: var(--soft);
+    }
+
+    canvas {
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .swatch.gpu {
+      background: var(--accent);
+    }
+
+    .swatch.cpu {
+      background: var(--accent-3);
+    }
+
+    section {
+      padding: 86px 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 28px;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 52px);
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+      font-weight: 900;
+    }
+
+    .section-text {
+      color: var(--muted);
+      max-width: 620px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      position: relative;
+      padding: 26px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      transform-style: preserve-3d;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 0%, rgba(124,156,255,0.18), transparent 35%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(124, 156, 255, 0.35);
+    }
+
+    .icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, rgba(124,156,255,0.22), rgba(34,211,238,0.18));
+      border: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 21px;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      position: relative;
+      z-index: 1;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 14px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+    }
+
+    .feature-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      background: linear-gradient(135deg, rgba(124,156,255,0.22), rgba(34,211,238,0.18));
+      border: 1px solid var(--border);
+      flex: 0 0 auto;
+    }
+
+    .feature-item b {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .feature-item span {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .warning-card {
+      padding: 28px;
+      border-radius: 28px;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      background:
+        linear-gradient(135deg, rgba(245,158,11,0.12), rgba(255,92,124,0.10)),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .warning-card h3 {
+      margin: 0 0 12px;
+      font-size: 28px;
+    }
+
+    .warning-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .metric-box {
+      padding: 28px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .metric-box b {
+      display: block;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .metric-box span {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .code {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .faq {
+      display: grid;
+      gap: 12px;
+    }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+      padding: 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    details p {
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 12px 0 0;
+    }
+
+    .cta {
+      padding: 42px;
+      border-radius: 34px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(135deg, rgba(124,156,255,0.16), rgba(34,211,238,0.10), rgba(244,114,182,0.12)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .cta h2 {
+      margin-bottom: 14px;
+    }
+
+    .cta p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    footer {
+      padding: 34px 0 44px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .delay-1 { transition-delay: 0.08s; }
+    .delay-2 { transition-delay: 0.16s; }
+    .delay-3 { transition-delay: 0.24s; }
+    .delay-4 { transition-delay: 0.32s; }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .split,
+      .download-grid,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+
+      .cards,
+      .metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .dash-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-actions {
+        justify-content: start;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .nav-links {
+        display: none;
+      }
+
+      .mobile-toggle {
+        display: grid;
+      }
+
+      .hero {
+        padding-top: 64px;
+      }
+
+      .dashboard {
+        min-height: 620px;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .metric.wide {
+        grid-column: span 2;
+      }
+
+      .cards,
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .cta {
+        padding: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-effects">
+    <div class="blob one"></div>
+    <div class="blob two"></div>
+    <div class="blob three"></div>
+    <div class="blob four"></div>
+  </div>
+
+  <header>
+    <div class="container">
+      <div class="nav">
+        <div class="logo">
+          <div class="logo-mark"></div>
+          <span>PulseMonitor</span>
+        </div>
+
+        <nav class="nav-links">
+          <a href="#features">Возможности</a>
+          <a href="#gpu">GPU</a>
+          <a href="#cpu">CPU</a>
+          <a href="#hotspot">Hotspot</a>
+          <a href="#install">Установка</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+
+        <div class="nav-actions">
+          <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">
+            🌙
+          </button>
+
+          <a class="btn primary" href="#install">Скачать</a>
+
+          <button class="icon-btn mobile-toggle" id="mobileToggle" aria-label="Меню">
+            ☰
+          </button>
+        </div>
+      </div>
+
+      <div class="mobile-menu" id="mobileMenu">
+        <a href="#features">Возможности</a>
+        <a href="#gpu">GPU</a>
+        <a href="#cpu">CPU</a>
+        <a href="#hotspot">Hotspot</a>
+        <a href="#install">Установка</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="badge reveal">
+            <span class="pulse"></span>
+            Live monitoring · AMD GPU + CPU
+          </div>
+
+          <h1 class="reveal delay-1">
+            Монитор <span class="gradient-text">AMD GPU</span> и <span class="gradient-text">CPU</span> в реальном времени
+          </h1>
+
+          <p class="lead reveal delay-2">
+            PulseMonitor показывает загрузку видеокарты, температуру, hotspot, VRAM,
+            энергопотребление, обороты вентилятора и параметры CPU в одном красивом
+            веб-дашборде.
+          </p>
+
+          <div class="actions reveal delay-3">
+            <a class="btn primary" href="#install">Установить</a>
+            <a class="btn" href="#features">Смотреть возможности</a>
+          </div>
+
+          <div class="trust reveal delay-4">
+            <span><span class="check">✓</span> GPU busy</span>
+            <span><span class="check">✓</span> Hotspot</span>
+            <span><span class="check">✓</span> VRAM</span>
+            <span><span class="check">✓</span> CPU load</span>
+            <span><span class="check">✓</span> Web dashboard</span>
+          </div>
+        </div>
+
+        <div class="dashboard reveal delay-2" id="tiltCard">
+          <div class="dashboard-inner">
+            <div class="dash-head">
+              <div class="mini-title">Live dashboard</div>
+              <div class="status">
+                <span class="dot"></span>
+                online
+              </div>
+            </div>
+
+            <div class="dash-grid">
+              <div class="panel">
+                <div class="panel-title">AMD GPU</div>
+
+                <div class="metric-grid">
+                  <div class="metric">
+                    <span class="label">Busy</span>
+                    <strong id="gpuBusy">12%</strong>
+                    <div class="bar">
+                      <div class="fill gpu" id="gpuBusyBar" style="width: 12%"></div>
+                    </div>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Edge</span>
+                    <strong id="gpuEdge">45.0°C</strong>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Hotspot</span>
+                    <strong class="hot" id="gpuHotspot">62.0°C</strong>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Junction</span>
+                    <strong id="gpuJunction">62.0°C</strong>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Power</span>
+                    <strong id="gpuPower">18.0 W</strong>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Fan</span>
+                    <strong id="gpuFan">1200 RPM</strong>
+                  </div>
+
+                  <div class="metric wide">
+                    <span class="label">VRAM</span>
+                    <strong id="vram">1024 / 8192 MB</strong>
+                    <div class="bar">
+                      <div class="fill vram" id="vramBar" style="width: 12.5%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-title">CPU</div>
+
+                <div class="metric-grid">
+                  <div class="metric">
+                    <span class="label">Load</span>
+                    <strong id="cpuLoad">8%</strong>
+                    <div class="bar">
+                      <div class="fill cpu" id="cpuLoadBar" style="width: 8%"></div>
+                    </div>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Temp</span>
+                    <strong id="cpuTemp">42.0°C</strong>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Freq</span>
+                    <strong id="cpuFreq">3.20 GHz</strong>
+                  </div>
+
+                  <div class="metric">
+                    <span class="label">Cores</span>
+                    <strong id="cpuCores">16</strong>
+                  </div>
+                </div>
+
+                <div class="spark-wrap">
+                  <canvas id="spark"></canvas>
+                  <div class="legend">
+                    <span class="legend-item">
+                      <i class="swatch gpu"></i>
+                      GPU
+                    </span>
+                    <span class="legend-item">
+                      <i class="swatch cpu"></i>
+                      CPU
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Возможности</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Один дашборд для GPU и CPU: температуры, загрузка, память, питание,
+            вентиляторы и hotspot.
+          </p>
+        </div>
+
+        <div class="cards">
+          <div class="card reveal tilt">
+            <div class="icon">🎮</div>
+            <h3>AMD GPU мониторинг</h3>
+            <p>
+              Загрузка GPU, температура edge, hotspot, junction, VRAM, power и fan.
+            </p>
+          </div>
+
+          <div class="card reveal delay-1 tilt">
+            <div class="icon">🧠</div>
+            <h3>CPU мониторинг</h3>
+            <p>
+              Загрузка процессора, температура, частота и количество ядер.
+            </p>
+          </div>
+
+          <div class="card reveal delay-2 tilt">
+            <div class="icon">🔥</div>
+            <h3>Hotspot температура</h3>
+            <p>
+              Отдельный контроль самой горячей точки GPU — важно для игр и стресс-тестов.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="gpu">
+      <div class="container split">
+        <div>
+          <h2 class="reveal">GPU мониторинг</h2>
+          <p class="section-text reveal delay-1">
+            PulseMonitor читает данные из `sysfs` драйвера `amdgpu` и показывает
+            основные параметры видеокарты в реальном времени.
+          </p>
+        </div>
+
+        <div class="feature-list">
+          <div class="feature-item reveal">
+            <div class="feature-icon">📊</div>
+            <div>
+              <b>gpu_busy_percent</b>
+              <span>Загрузка GPU в процентах.</span>
+            </div>
+          </div>
+
+          <div class="feature-item reveal delay-1">
+            <div class="feature-icon">🌡️</div>
+            <div>
+              <b>Edge / Junction / Hotspot</b>
+              <span>Температуры GPU из hwmon.</span>
+            </div>
+          </div>
+
+          <div class="feature-item reveal delay-2">
+            <div class="feature-icon">💾</div>
+            <div>
+              <b>VRAM used / total</b>
+              <span>Использование видеопамяти.</span>
+            </div>
+          </div>
+
+          <div class="feature-item reveal delay-3">
+            <div class="feature-icon">⚡</div>
+            <div>
+              <b>Power / Fan</b>
+              <span>Энергопотребление и обороты вентилятора.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cpu">
+      <div class="container split">
+        <div class="feature-list">
+          <div class="feature-item reveal">
+            <div class="feature-icon">🧮</div>
+            <div>
+              <b>CPU Load</b>
+              <span>Общая загрузка процессора.</span>
+            </div>
+          </div>
+
+          <div class="feature-item reveal delay-1">
+            <div class="feature-icon">🌡️</div>
+            <div>
+              <b>CPU Temperature</b>
+              <span>Температура процессора.</span>
+            </div>
+          </div>
+
+          <div class="feature-item reveal delay-2">
+            <div class="feature-icon">⚙️</div>
+            <div>
+              <b>CPU Frequency</b>
+              <span>Текущая частота ядер.</span>
+            </div>
+          </div>
+
+          <div class="feature-item reveal delay-3">
+            <div class="feature-icon">🧩</div>
+            <div>
+              <b>CPU Cores</b>
+              <span>Количество логических ядер.</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="reveal">CPU мониторинг</h2>
+          <p class="section-text reveal delay-1">
+            Дашборд показывает не только видеокарту, но и процессор: загрузку,
+            температуру, частоту и количество ядер.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="hotspot">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Hotspot температура</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Hotspot — самая горячая точка GPU. Она обычно выше обычной температуры
+            edge и важна при играх, рендере и стресс-тестах.
+          </p>
+        </div>
+
+        <div class="warning-card reveal">
+          <h3>Контроль перегрева</h3>
+          <p>
+            PulseMonitor отдельно выделяет hotspot и junction температуру.
+            Если hotspot уходит выше безопасных значений, дашборд визуально
+            подсвечивает предупреждение.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="metrics">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">Метрики</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Анимированные счётчики для лендинга.
+          </p>
+        </div>
+
+        <div class="metrics">
+          <div class="metric-box reveal">
+            <b data-count="60">0</b>
+            <span>Точек истории</span>
+          </div>
+
+          <div class="metric-box reveal delay-1">
+            <b data-count="1000">0</b>
+            <span>мс обновление</span>
+          </div>
+
+          <div class="metric-box reveal delay-2">
+            <b data-count="1">0</b>
+            <span>HTML файл</span>
+          </div>
+
+          <div class="metric-box reveal delay-3">
+            <b data-count="0">0</b>
+            <span>Зависимостей</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="container download-grid">
+        <div>
+          <h2 class="reveal">Установка</h2>
+          <p class="section-text reveal delay-1">
+            Пример запуска Python-монитора с веб-интерфейсом.
+            Для тестового режима без реальной видеокарты используй `--test`.
+          </p>
+        </div>
+
+        <div class="code reveal delay-2">
+python3 amd_gpu_monitor_web.py --test --open
+
+# Реальный запуск
+python3 amd_gpu_monitor_web.py
+
+# Другой порт
+python3 amd_gpu_monitor_web.py --port 9000 --open
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="reveal">FAQ</h2>
+          </div>
+          <p class="section-text reveal delay-1">
+            Частые вопросы по тестовому монитору.
+          </p>
+        </div>
+
+        <div class="faq">
+          <details class="reveal">
+            <summary>Какие данные показывает GPU?</summary>
+            <p>
+              Busy, Edge, Hotspot, Junction, Power, Fan, VRAM used и VRAM total.
+            </p>
+          </details>
+
+          <details class="reveal delay-1">
+            <summary>Что такое hotspot?</summary>
+            <p>
+              Hotspot — самая горячая точка GPU. Обычно она выше обычной температуры
+              edge и может быть критична при нагрузке.
+            </p>
+          </details>
+
+          <details class="reveal delay-2">
+            <summary>Можно ли запустить без AMD GPU?</summary>
+            <p>
+              Да, для лендинга и тестов используется тестовый режим с фейковыми данными.
+            </p>
+          </details>
+
+          <details class="reveal delay-3">
+            <summary>Нужны ли внешние библиотеки?</summary>
+            <p>
+              Нет. Лендинг работает на чистом HTML, CSS и JavaScript.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta reveal">
+          <div>
+            <h2>Готов к запуску</h2>
+            <p>
+              Этот лендинг можно использовать как страницу продукта для AMD GPU + CPU
+              монитора, тестового дашборда или портфолио.
+            </p>
+          </div>
+
+          <div class="cta-actions">
+            <a class="btn primary" href="#install">Скачать</a>
+            <a class="btn" href="#features">Возможности</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <div>© 2026 PulseMonitor</div>
+      <div>AMD GPU + CPU Monitor</div>
+    </div>
+  </footer>
+
+  <script>
+    const html = document.documentElement;
+    const themeToggle = document.getElementById("themeToggle");
+    const mobileToggle = document.getElementById("mobileToggle");
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    html.dataset.theme = savedTheme;
+    themeToggle.textContent = savedTheme === "dark" ? "🌙" : "☀️";
+
+    themeToggle.addEventListener("click", () => {
+      const current = html.dataset.theme;
+      const next = current === "dark" ? "light" : "dark";
+
+      html.dataset.theme = next;
+      localStorage.setItem("theme", next);
+      themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
+    });
+
+    mobileToggle.addEventListener("click", () => {
+      mobileMenu.classList.toggle("open");
+    });
+
+    document.querySelectorAll(".mobile-menu a").forEach((link) => {
+      link.addEventListener("click", () => {
+        mobileMenu.classList.remove("open");
+      });
+    });
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.12,
+      }
+    );
+
+    document.querySelectorAll(".reveal").forEach((el) => {
+      revealObserver.observe(el);
+    });
+
+    const counterObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const el = entry.target;
+          const target = Number(el.dataset.count || 0);
+          const duration = 1400;
+          const start = performance.now();
+
+          function tick(now) {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(target * eased);
+
+            if (progress < 1) {
+              requestAnimationFrame(tick);
+            }
+          }
+
+          requestAnimationFrame(tick);
+          counterObserver.unobserve(el);
+        });
+      },
+      {
+        threshold: 0.4,
+      }
+    );
+
+    document.querySelectorAll("[data-count]").forEach((el) => {
+      counterObserver.observe(el);
+    });
+
+    function addTilt(card) {
+      card.addEventListener("mousemove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const rotateX = ((y / rect.height) - 0.5) * -8;
+        const rotateY = ((x / rect.width) - 0.5) * 8;
+
+        card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+      });
+
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0px)";
+      });
+    }
+
+    document.querySelectorAll(".tilt").forEach(addTilt);
+
+    const heroCard = document.getElementById("tiltCard");
+    if (heroCard) {
+      addTilt(heroCard);
+    }
+
+    const state = {
+      gpuBusy: 12,
+      gpuEdge: 45,
+      gpuHotspot: 62,
+      gpuJunction: 62,
+      gpuPower: 18,
+      gpuFan: 1200,
+      vramUsed: 1024,
+      vramTotal: 8192,
+      cpuLoad: 8,
+      cpuTemp: 42,
+      cpuFreq: 3.2,
+      cpuCores: 16,
+    };
+
+    const gpuHistory = [];
+    const cpuHistory = [];
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function fmt(value, suffix = "", digits = 1) {
+      return value.toFixed(digits) + suffix;
+    }
+
+    function pushHistory(arr, value) {
+      arr.push(value);
+      if (arr.length > 60) {
+        arr.shift();
+      }
+    }
+
+    function updateData() {
+      state.gpuBusy = clamp(state.gpuBusy + rand(-8, 12), 0, 100);
+      state.gpuEdge = clamp(state.gpuEdge + rand(-1.5, 2), 30, 85);
+      state.gpuHotspot = clamp(state.gpuEdge + rand(5, 25), 35, 105);
+      state.gpuJunction = state.gpuHotspot;
+      state.gpuPower = clamp(state.gpuPower + rand(-8, 18), 5, 300);
+      state.gpuFan = clamp(state.gpuFan + rand(-120, 180), 0, 3000);
+      state.vramUsed = clamp(state.vramUsed + rand(-120, 180), 100, state.vramTotal - 100);
+
+      state.cpuLoad = clamp(state.cpuLoad + rand(-10, 14), 0, 100);
+      state.cpuTemp = clamp(state.cpuTemp + rand(-2, 3), 25, 95);
+      state.cpuFreq = clamp(state.cpuFreq + rand(-0.2, 0.3), 0.8, 5.2);
+
+      pushHistory(gpuHistory, state.gpuBusy);
+      pushHistory(cpuHistory, state.cpuLoad);
+
+      render();
+      drawSpark();
+    }
+
+    function render() {
+      document.getElementById("gpuBusy").textContent = Math.round(state.gpuBusy) + "%";
+      document.getElementById("gpuBusyBar").style.width = state.gpuBusy + "%";
+
+      document.getElementById("gpuEdge").textContent = fmt(state.gpuEdge, "°C");
+      document.getElementById("gpuHotspot").textContent = fmt(state.gpuHotspot, "°C");
+      document.getElementById("gpuJunction").textContent = fmt(state.gpuJunction, "°C");
+      document.getElementById("gpuPower").textContent = fmt(state.gpuPower, " W");
+      document.getElementById("gpuFan").textContent = Math.round(state.gpuFan) + " RPM";
+
+      const vramPct = (state.vramUsed / state.vramTotal) * 100;
+      document.getElementById("vram").textContent =
+        Math.round(state.vramUsed) + " / " + state.vramTotal + " MB";
+      document.getElementById("vramBar").style.width = vramPct + "%";
+
+      document.getElementById("cpuLoad").textContent = Math.round(state.cpuLoad) + "%";
+      document.getElementById("cpuLoadBar").style.width = state.cpuLoad + "%";
+      document.getElementById("cpuTemp").textContent = fmt(state.cpuTemp, "°C");
+      document.getElementById("cpuFreq").textContent = fmt(state.cpuFreq, " GHz", 2);
+      document.getElementById("cpuCores").textContent = state.cpuCores;
+    }
+
+    function drawLine(data, color, width) {
+      const canvas = document.getElementById("spark");
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      if (data.length < 2) return;
+
+      ctx.beginPath();
+
+      data.forEach((value, index) => {
+        const x = (index / 59) * w;
+        const y = h - (value / 100) * h;
+
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+
+    function drawSpark() {
+      const canvas = document.getElementById("spark");
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const styles = getComputedStyle(html);
+      const border = styles.getPropertyValue("--border").trim();
+      const accent = styles.getPropertyValue("--accent").trim();
+      const accent3 = styles.getPropertyValue("--accent-3").trim();
+
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
+
+      for (let i = 1; i < 4; i++) {
+        const y = (h * i) / 4;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      drawLine(gpuHistory, accent, 2.5);
+      drawLine(cpuHistory, accent3, 2.5);
+    }
+
+    for (let i = 0; i < 60; i++) {
+      gpuHistory.push(clamp(state.gpuBusy + rand(-8, 8), 0, 100));
+      cpuHistory.push(clamp(state.cpuLoad + rand(-8, 8), 0, 100));
+    }
+
+    window.addEventListener("resize", drawSpark);
+
+    updateData();
+    setInterval(updateData, 1000);
+  </script>
+</body>
+</html>
